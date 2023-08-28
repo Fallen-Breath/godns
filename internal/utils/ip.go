@@ -188,7 +188,7 @@ func GetIPOnline(configuration *settings.Settings) (string, error) {
 			bestCnt = cnt
 		}
 	}
-	log.Infof("select the best ip %s, ip map=%v", bestIp, ips)
+	log.Infof("IP fetch finished, data=%v, best ip=%s", ips, bestIp)
 
 	return bestIp, nil
 }
