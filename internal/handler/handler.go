@@ -38,11 +38,11 @@ func (handler *Handler) SetProvider(provider provider.IDNSProvider) {
 	handler.dnsProvider = provider
 }
 
-func (handler *Handler) LoopUpdateIP(ctx context.Context, domain *settings.Domain) error {
+func (handler *Handler) LoopUpdateIP(ctx context.Context, domains *[]settings.Domain) error {
 	ticker := time.NewTicker(time.Second * time.Duration(handler.Configuration.Interval))
 
 	// run once at the beginning
-	err := handler.UpdateIP(domain)
+	err := handler.UpdateIP(domains)
 	if err != nil {
 		log.WithError(err).Debug("Update IP failed during the DNS Update loop")
 	}
@@ -51,7 +51,7 @@ func (handler *Handler) LoopUpdateIP(ctx context.Context, domain *settings.Domai
 	for {
 		select {
 		case <-ticker.C:
-			err := handler.UpdateIP(domain)
+			err := handler.UpdateIP(domains)
 			if err != nil {
 				log.WithError(err).Debug("Update IP failed during the DNS Update loop")
 			}
@@ -64,7 +64,7 @@ func (handler *Handler) LoopUpdateIP(ctx context.Context, domain *settings.Domai
 	}
 }
 
-func (handler *Handler) UpdateIP(domain *settings.Domain) error {
+func (handler *Handler) UpdateIP(domains *[]settings.Domain) error {
 	ip, err := utils.GetCurrentIP(handler.Configuration)
 	if err != nil {
 		if handler.Configuration.RunOnce {
@@ -79,13 +79,15 @@ func (handler *Handler) UpdateIP(domain *settings.Domain) error {
 		return nil
 	}
 
-	err = handler.updateDNS(domain, ip)
-	if err != nil {
-		if handler.Configuration.RunOnce {
-			return fmt.Errorf("%v: fail to update DNS", err)
+	for _, domain := range *domains {
+		err = handler.updateDNS(&domain, ip)
+		if err != nil {
+			if handler.Configuration.RunOnce {
+				return fmt.Errorf("%v: fail to update DNS", err)
+			}
+			log.Error(err)
+			return nil
 		}
-		log.Error(err)
-		return nil
 	}
 	handler.cachedIP = ip
 	log.Debugf("Cached IP address: %s", ip)

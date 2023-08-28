@@ -42,19 +42,15 @@ func (manager *DNSManager) Build() error {
 }
 
 func (manager *DNSManager) Run() {
-	for _, domain := range manager.configuration.Domains {
-		domain := domain
-
-		if manager.configuration.RunOnce {
-			err := manager.handler.UpdateIP(&domain)
-			if err != nil {
-				log.Error("Error during execution:", err)
-				os.Exit(1)
-			}
-		} else {
-			// pass the context to the goroutine
-			go manager.handler.LoopUpdateIP(manager.ctx, &domain)
+	if manager.configuration.RunOnce {
+		err := manager.handler.UpdateIP(&manager.configuration.Domains)
+		if err != nil {
+			log.Error("Error during execution:", err)
+			os.Exit(1)
 		}
+	} else {
+		// pass the context to the goroutine
+		go manager.handler.LoopUpdateIP(manager.ctx, &manager.configuration.Domains)
 	}
 
 	if manager.configuration.RunOnce {
