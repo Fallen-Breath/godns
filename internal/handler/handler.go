@@ -27,6 +27,7 @@ type Handler struct {
 	dnsProvider         provider.IDNSProvider
 	notificationManager notification.INotificationManager
 	cachedIP            string
+	cacheTime           time.Time
 }
 
 func (handler *Handler) SetConfiguration(conf *settings.Settings) {
@@ -74,6 +75,14 @@ func (handler *Handler) UpdateIP(domains *[]settings.Domain) error {
 		return nil
 	}
 
+	if time.Now().Sub(handler.cacheTime) >= utils.DefaultIPCacheTimeout {
+		if !handler.cacheTime.IsZero() {
+			log.Debugf("cache IP (%s %s) expired", handler.cachedIP, handler.cacheTime.Format(time.DateTime))
+		}
+		handler.cachedIP = ""
+		handler.cacheTime = time.Time{}
+	}
+
 	if ip == handler.cachedIP {
 		log.Debugf("IP (%s) matches cached IP (%s), skipping", ip, handler.cachedIP)
 		return nil
@@ -90,6 +99,7 @@ func (handler *Handler) UpdateIP(domains *[]settings.Domain) error {
 		}
 	}
 	handler.cachedIP = ip
+	handler.cacheTime = time.Now()
 	log.Debugf("Cached IP address: %s", ip)
 	return nil
 }

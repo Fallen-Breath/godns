@@ -1,5 +1,7 @@
 package utils
 
+import "time"
+
 const (
 	// PanicMax is the max allowed panic times.
 	PanicMax = 5
@@ -59,4 +61,7 @@ const (
 
 	// defaultTimeout is the default timeout value, in seconds.
 	defaultTimeout = 10
+
+	// DefaultIPCacheTimeout is the default lifetime of the local ip cache for each dns handler
+	DefaultIPCacheTimeout = 1 * time.Hour
 )
