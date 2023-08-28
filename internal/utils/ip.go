@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/TimothyYe/godns/internal/settings"
@@ -120,8 +121,17 @@ func GetIPOnline(configuration *settings.Settings) (string, error) {
 		}
 	}
 
-	ips := make(map[string]int)
-	for _, reqURL := range reqURLs {
+	var wg sync.WaitGroup
+	outputCh := make(chan string, len(reqURLs))
+	sem := make(chan int, DefaultIpFetchConcurrency)
+
+	fetchFunc := func(reqURL string) {
+		sem <- 0
+		defer func() {
+			<-sem
+		}()
+		defer wg.Done()
+
 		req, _ := http.NewRequest("GET", reqURL, nil)
 
 		if configuration.UserAgent != "" {
@@ -132,14 +142,14 @@ func GetIPOnline(configuration *settings.Settings) (string, error) {
 
 		if err != nil {
 			log.Error("Cannot get IP:", err)
-			continue
+			return
 		}
 
 		defer response.Body.Close()
 
 		if response.StatusCode != http.StatusOK {
 			log.Error(fmt.Sprintf("request %v got httpCode:%v", reqURL, response.StatusCode))
-			continue
+			return
 		}
 
 		body, _ := io.ReadAll(response.Body)
@@ -147,10 +157,23 @@ func GetIPOnline(configuration *settings.Settings) (string, error) {
 		onlineIP = ipReg.FindString(string(body))
 		if onlineIP == "" {
 			log.Error(fmt.Sprintf("request:%v failed to get online IP", reqURL))
-			continue
+			return
 		}
 		log.Debugf("get ip success by: %s, online IP: %s", reqURL, onlineIP)
-		ips[onlineIP]++
+		outputCh <- onlineIP
+	}
+	for _, url := range reqURLs {
+		wg.Add(1)
+		go fetchFunc(url)
+	}
+	go func() {
+		wg.Wait()
+		close(outputCh)
+	}()
+
+	ips := make(map[string]int)
+	for ip := range outputCh {
+		ips[ip]++
 	}
 
 	if len(ips) == 0 {
@@ -165,7 +188,7 @@ func GetIPOnline(configuration *settings.Settings) (string, error) {
 			bestCnt = cnt
 		}
 	}
-	log.Infof("select the best ip %s, ip map %v", bestIp, ips)
+	log.Infof("select the best ip %s, ip map=%v", bestIp, ips)
 
 	return bestIp, nil
 }

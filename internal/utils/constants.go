@@ -64,4 +64,6 @@ const (
 
 	// DefaultIPCacheTimeout is the default lifetime of the local ip cache for each dns handler
 	DefaultIPCacheTimeout = 1 * time.Hour
+
+	DefaultIpFetchConcurrency = 8
 )
