@@ -120,6 +120,7 @@ func GetIPOnline(configuration *settings.Settings) (string, error) {
 		}
 	}
 
+	ips := make(map[string]int)
 	for _, reqURL := range reqURLs {
 		req, _ := http.NewRequest("GET", reqURL, nil)
 
@@ -149,13 +150,24 @@ func GetIPOnline(configuration *settings.Settings) (string, error) {
 			continue
 		}
 		log.Debugf("get ip success by: %s, online IP: %s", reqURL, onlineIP)
+		ips[onlineIP]++
 	}
 
-	if onlineIP == "" {
+	if len(ips) == 0 {
 		return "", errors.New("All IP API are failed to get online IP")
 	}
 
-	return onlineIP, nil
+	bestIp := onlineIP
+	bestCnt := 0
+	for ip, cnt := range ips {
+		if cnt > bestCnt {
+			bestIp = ip
+			bestCnt = cnt
+		}
+	}
+	log.Infof("select the best ip %s, ip map %v", bestIp, ips)
+
+	return bestIp, nil
 }
 
 // ResolveDNS will query DNS for a given hostname.
