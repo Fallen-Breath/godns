@@ -134,7 +134,7 @@ func (handler *Handler) updateDNS(domain *settings.Domain, ip string) error {
 
 			// execute webhook when it is enabled
 			if handler.Configuration.Webhook.Enabled {
-				if err := lib.GetWebhook(handler.Configuration).Execute(hostname, ip); err != nil {
+				if err := lib.GetWebhook(handler.Configuration).Execute(hostname, ip, lastIP); err != nil {
 					return err
 				}
 			}

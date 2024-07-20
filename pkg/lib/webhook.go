@@ -34,7 +34,7 @@ func GetWebhook(conf *settings.Settings) *Webhook {
 	return instance
 }
 
-func (w *Webhook) Execute(domain, currentIP string) error {
+func (w *Webhook) Execute(domain, currentIP, lastIP string) error {
 	if w.conf.Webhook.URL == "" {
 		log.Debug("Webhook URL is empty, skip sending notification")
 		return nil
@@ -50,13 +50,13 @@ func (w *Webhook) Execute(domain, currentIP string) error {
 	var err error
 	// send HTTP get request
 	if method == http.MethodGet {
-		reqURL, err = w.buildReqURL(domain, currentIP, w.conf.IPType)
+		reqURL, err = w.buildReqURL(domain, currentIP, lastIP, w.conf.IPType)
 		if err != nil {
 			return err
 		}
 	} else {
 		reqURL = w.conf.Webhook.URL
-		reqBody, err = w.buildReqBody(domain, currentIP, w.conf.IPType)
+		reqBody, err = w.buildReqBody(domain, currentIP, lastIP, w.conf.IPType)
 		if err != nil {
 			return err
 		}
@@ -94,7 +94,7 @@ func (w *Webhook) Execute(domain, currentIP string) error {
 	return nil
 }
 
-func (w *Webhook) buildReqURL(domain, currentIP, ipType string) (string, error) {
+func (w *Webhook) buildReqURL(domain, currentIP, lastIP, ipType string) (string, error) {
 	t := template.New("req template")
 	if _, err := t.Parse(w.conf.Webhook.URL); err != nil {
 		log.Error("Failed to parse template:", err)
@@ -103,10 +103,12 @@ func (w *Webhook) buildReqURL(domain, currentIP, ipType string) (string, error) 
 
 	data := struct {
 		CurrentIP string
+		LastIP    string
 		Domain    string
 		IPType    string
 	}{
 		currentIP,
+		lastIP,
 		domain,
 		ipType,
 	}
@@ -120,7 +122,7 @@ func (w *Webhook) buildReqURL(domain, currentIP, ipType string) (string, error) 
 	return tpl.String(), nil
 }
 
-func (w *Webhook) buildReqBody(domain, currentIP, ipType string) (string, error) {
+func (w *Webhook) buildReqBody(domain, currentIP, lastIP, ipType string) (string, error) {
 	t := template.New("reqBody template")
 	if _, err := t.Parse(w.conf.Webhook.RequestBody); err != nil {
 		log.Error("Failed to parse template:", err)
@@ -129,10 +131,12 @@ func (w *Webhook) buildReqBody(domain, currentIP, ipType string) (string, error)
 
 	data := struct {
 		CurrentIP string
+		LastIP    string
 		Domain    string
 		IPType    string
 	}{
 		currentIP,
+		lastIP,
 		domain,
 		ipType,
 	}
