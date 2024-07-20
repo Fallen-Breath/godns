@@ -123,8 +123,9 @@ func (handler *Handler) updateDNS(domain *settings.Domain, ip string) error {
 
 		//check against the current known IP, if no change, skip update
 		if ip == lastIP {
-			log.Infof("IP is the same as cached one (%s). Skip update.", ip)
+			log.Infof("IP is the same as the resolved one, skip update, domain: %s, current IP: %s, resolved IP: %s", hostname, ip, lastIP)
 		} else {
+			log.Infof("IP is different from the resolved one, do update, domain: %s, current IP: %s, resolved IP: %s", hostname, ip, lastIP)
 
 			if err := handler.dnsProvider.UpdateIP(domain.DomainName, subdomainName, ip); err != nil {
 				return err
