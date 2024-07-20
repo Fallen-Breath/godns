@@ -90,6 +90,10 @@ func (w *Webhook) Execute(domain, currentIP, lastIP string) error {
 		return err
 	}
 
+	if !(200 <= resp.StatusCode && resp.StatusCode < 300) {
+		log.Errorf("Webhook response bad status code %d: %s", resp.StatusCode, string(content))
+	}
+
 	log.Debugf("Webhook response: %s", string(content))
 	return nil
 }
