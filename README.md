@@ -826,6 +826,7 @@ Webhook is another feature that GoDNS provides to deliver notifications to the o
 The configuration section `webhook` is used for customizing the webhook request. In general, there are 2 fields used for the webhook request:
 
 > - `url`: The target URL for sending webhook request.
+> - `headers`: The extra headers for sending webhook request. It's optional.
 > - `request_body`: The content for sending `POST` request, if this field is empty, a HTTP GET request will be sent instead of the HTTP POST request.
 
 Available variables:
@@ -840,11 +841,14 @@ Available variables:
 "webhook": {
   "enabled": true,
   "url": "http://localhost:5000/api/v1/send?domain={{.Domain}}&ip={{.CurrentIP}}&ip_type={{.IPType}}",
+  "headers": {
+    "foo": "bar"
+  },
   "request_body": ""
 }
 ```
 
-For this example, a webhook with query string parameters will be sent to the target URL:
+For this example, a webhook with header `foo: bar` with query string parameters will be sent to the target URL:
 
 ```
 http://localhost:5000/api/v1/send?domain=ddns.example.com&ip=192.168.1.1&ip_type=IPV4
@@ -856,11 +860,14 @@ http://localhost:5000/api/v1/send?domain=ddns.example.com&ip=192.168.1.1&ip_type
 "webhook": {
   "enabled": true,
   "url": "http://localhost:5000/api/v1/send",
+  "headers": {
+    "Authorization": "Bearer my_token"
+  },
   "request_body": "{ \"domain\": \"{{.Domain}}\", \"ip\": \"{{.CurrentIP}}\", \"ip_type\": \"{{.IPType}}\" }"
 }
 ```
 
-For this example, a webhook will be triggered when the IP changes, the target URL `http://localhost:5000/api/v1/send` will receive an `HTTP POST` request with request body:
+For this example, a webhook with bearer authentication will be triggered when the IP changes, the target URL `http://localhost:5000/api/v1/send` will receive an `HTTP POST` request with request body:
 
 ```json
 { "domain": "ddns.example.com", "ip": "192.168.1.1", "ip_type": "IPV4" }

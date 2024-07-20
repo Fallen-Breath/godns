@@ -69,6 +69,10 @@ func (w *Webhook) Execute(domain, currentIP string) error {
 		return err
 	}
 
+	for headerKey, headerValue := range w.conf.Webhook.Headers {
+		req.Header.Add(headerKey, headerValue)
+	}
+
 	if method == http.MethodPost {
 		req.Header.Add("Content-Type", "application/json")
 	}

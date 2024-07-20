@@ -88,9 +88,10 @@ type Notify struct {
 
 // Webhook struct.
 type Webhook struct {
-	Enabled     bool   `json:"enabled" yaml:"enabled"`
-	URL         string `json:"url" yaml:"url"`
-	RequestBody string `json:"request_body" yaml:"request_body"`
+	Enabled     bool              `json:"enabled" yaml:"enabled"`
+	URL         string            `json:"url" yaml:"url"`
+	Headers     map[string]string `json:"request_headers" yaml:"headers"`
+	RequestBody string            `json:"request_body" yaml:"request_body"`
 }
 
 // Settings struct.
