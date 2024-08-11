@@ -120,6 +120,9 @@ func (handler *Handler) updateDNS(domain *settings.Domain, ip string) error {
 			log.Errorf("Failed to resolve DNS for domain: %s, error: %s", hostname, err)
 			continue
 		}
+		if err != nil {
+			log.Warnf("Failed to resolve DNS for domain: %s, error: %s", hostname, err)
+		}
 
 		//check against the current known IP, if no change, skip update
 		if ip == lastIP {
