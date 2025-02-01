@@ -21,6 +21,6 @@ RUN go generate ./...
 RUN CGO_ENABLED=0 go build -ldflags "-X main.Version=${VERSION}" -o godns cmd/godns/godns.go
 
 # Final stage: Copy the Go binary into a distroless image
-FROM gcr.io/distroless/base
+FROM alpine:latest
 COPY --from=builder /godns/godns /godns
 ENTRYPOINT ["/godns"]
