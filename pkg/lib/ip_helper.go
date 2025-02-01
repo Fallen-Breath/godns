@@ -285,10 +285,17 @@ func (helper *IPHelper) getIPOnline() string {
 		Transport: transport,
 	}
 
-	var onlineIP string
+	var wg sync.WaitGroup
+	outputCh := make(chan string, len(helper.reqURLs))
+	sem := make(chan int, utils.DefaultIpFetchConcurrency)
 
-	for {
-		reqURL := helper.getNext()
+	fetchFunc := func(reqURL string) {
+		sem <- 0
+		defer func() {
+			<-sem
+		}()
+		defer wg.Done()
+
 		req, _ := http.NewRequest("GET", reqURL, nil)
 
 		if helper.configuration.UserAgent != "" {
@@ -300,31 +307,31 @@ func (helper *IPHelper) getIPOnline() string {
 		if err != nil {
 			log.Error("Cannot get IP:", err)
 			time.Sleep(time.Millisecond * 300)
-			continue
+			return
 		}
 
 		if response.StatusCode != http.StatusOK {
 			log.Error(fmt.Sprintf("request %v got httpCode:%v", reqURL, response.StatusCode))
-			continue
+			return
 		}
 
 		body, _ := io.ReadAll(response.Body)
 		ipReg := regexp.MustCompile(utils.IPPattern)
-		onlineIP = ipReg.FindString(string(body))
+		onlineIP := ipReg.FindString(string(body))
 		if onlineIP == "" {
 			log.Error(fmt.Sprintf("request:%v failed to get online IP", reqURL))
-			continue
+			return
 		}
 
 		if isIPv4(onlineIP) {
 			if strings.ToUpper(helper.configuration.IPType) != utils.IPV4 {
 				log.Warnf("The online IP (%s) from %s is not IPV6, will skip it.", onlineIP, reqURL)
-				continue
+				return
 			}
 		} else {
 			if strings.ToUpper(helper.configuration.IPType) != utils.IPV6 {
 				log.Warnf("The online IP (%s) from %s is not IPV4, will skip it.", onlineIP, reqURL)
-				continue
+				return
 			}
 		}
 
@@ -333,15 +340,46 @@ func (helper *IPHelper) getIPOnline() string {
 		err = response.Body.Close()
 		if err != nil {
 			log.Error(fmt.Sprintf("request:%v failed to get online IP", reqURL))
-			continue
+			return
 		}
 
 		if onlineIP == "" {
 			log.Error("fail to get online IP")
+			return
 		}
 
-		break
+		log.Debugf("get ip success by: %s, online IP: %s", reqURL, onlineIP)
+		outputCh <- onlineIP
 	}
 
-	return onlineIP
+	for _, url_ := range helper.reqURLs {
+		wg.Add(1)
+		go fetchFunc(url_)
+	}
+	go func() {
+		wg.Wait()
+		close(outputCh)
+	}()
+
+	ips := make(map[string]int)
+	for ip := range outputCh {
+		ips[ip]++
+	}
+
+	if len(ips) == 0 {
+		log.Warn("All IP API are failed to get online IP")
+		return ""
+	}
+
+	bestIp := ""
+	bestCnt := 0
+	for ip, cnt := range ips {
+		if cnt > bestCnt {
+			bestIp = ip
+			bestCnt = cnt
+		}
+	}
+	log.Infof("IP fetch finished, data=%v, best ip=%s", ips, bestIp)
+
+	return bestIp
 }

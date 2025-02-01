@@ -3,8 +3,6 @@ package utils
 import (
 	"net"
 	"strings"
-	"sync"
-	"time"
 
 	dnsResolver "github.com/TimothyYe/godns/pkg/resolver"
 	"github.com/miekg/dns"
