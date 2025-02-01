@@ -34,9 +34,17 @@ func CheckSettings(config *settings.Settings) error {
 		if config.Password == "" {
 			return errors.New("password cannot be empty")
 		}
+	case DIGITALOCEAN:
+		if config.LoginToken == "" {
+			return errors.New("login token cannot be empty")
+		}
 	case DUCK:
 		if config.LoginToken == "" {
 			return errors.New("login token cannot be empty")
+		}
+	case DYNU:
+		if config.Password == "" {
+			return errors.New("password cannot be empty")
 		}
 	case DYNV6:
 		if config.LoginToken == "" {
@@ -71,7 +79,15 @@ func CheckSettings(config *settings.Settings) error {
 		if config.Password == "" {
 			return errors.New("password cannot be empty")
 		}
+	case INFOMANIAK:
+		if config.Password == "" {
+			return errors.New("password cannot be empty")
+		}
 	case HETZNER:
+		if config.LoginToken == "" {
+			return errors.New("login token cannot be empty")
+		}
+	case IONOS:
 		if config.LoginToken == "" {
 			return errors.New("login token cannot be empty")
 		}

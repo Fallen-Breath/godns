@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/TimothyYe/godns/internal/manager"
 	"github.com/TimothyYe/godns/internal/settings"
@@ -20,19 +21,17 @@ const (
 )
 
 var (
-	configuration settings.Settings
-	optConf       = flag.String("c", "./config.json", "Specify a config file")
-	optHelp       = flag.Bool("h", false, "Show help")
+	config  settings.Settings
+	optAddr = flag.String("a", ":9000", "Specify the address to listen on")
+	optConf = flag.String("c", "./config.json", "Specify a config file")
+	optHelp = flag.Bool("h", false, "Show help")
 
 	// Version is current version of GoDNS.
-	Version = "0.1"
+	Version = "v0.1"
 )
 
-func init() {
-	log.SetOutput(os.Stdout)
-}
-
 func main() {
+	utils.Version = Version
 
 	flag.Parse()
 	if *optHelp {
@@ -49,26 +48,26 @@ func main() {
 		configPath = os.Getenv(configEnv)
 	}
 
-	// Load settings from configurations file
-	if err := settings.LoadSettings(configPath, &configuration); err != nil {
+	// Load settings from configs file
+	if err := settings.LoadSettings(configPath, &config); err != nil {
 		log.Fatal(err)
 	}
 
-	if configuration.DebugInfo {
+	// set the log level
+	log.SetOutput(os.Stdout)
+
+	if config.DebugInfo {
 		log.SetLevel(log.DebugLevel)
 	} else {
 		log.SetLevel(log.InfoLevel)
 	}
 
-	if err := utils.CheckSettings(&configuration); err != nil {
+	if err := utils.CheckSettings(&config); err != nil {
 		log.Fatal("Invalid settings: ", err.Error())
 	}
 
 	// Create DNS manager
-	dnsManager := &manager.DNSManager{}
-	if err := dnsManager.SetConfiguration(&configuration).Build(); err != nil {
-		log.Fatal(err)
-	}
+	dnsManager := manager.GetDNSManager(configPath, &config, *optAddr)
 
 	// Run DNS manager
 	log.Info("GoDNS started, starting the DNS manager...")
@@ -82,5 +81,7 @@ func main() {
 	<-c
 	log.Info("GoDNS is terminated, stopping the DNS manager...")
 	dnsManager.Stop()
+	// wait for the goroutines to exit
+	time.Sleep(200 * time.Millisecond)
 	log.Info("GoDNS is stopped, bye!")
 }

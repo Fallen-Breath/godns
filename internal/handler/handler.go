@@ -23,16 +23,27 @@ var (
 )
 
 type Handler struct {
+	ctx                 context.Context
 	Configuration       *settings.Settings
 	dnsProvider         provider.IDNSProvider
 	notificationManager notification.INotificationManager
+	ipManager           *lib.IPHelper
 	cachedIP            string
 	cacheTime           time.Time
+}
+
+func (handler *Handler) SetContext(ctx context.Context) {
+	handler.ctx = ctx
 }
 
 func (handler *Handler) SetConfiguration(conf *settings.Settings) {
 	handler.Configuration = conf
 	handler.notificationManager = notification.GetNotificationManager(handler.Configuration)
+	handler.ipManager = lib.GetIPHelperInstance(handler.Configuration)
+}
+
+func (handler *Handler) Init() {
+	handler.ipManager.UpdateConfiguration(handler.Configuration)
 }
 
 func (handler *Handler) SetProvider(provider provider.IDNSProvider) {
@@ -66,12 +77,11 @@ func (handler *Handler) LoopUpdateIP(ctx context.Context, domains *[]settings.Do
 }
 
 func (handler *Handler) UpdateIP(domains *[]settings.Domain) error {
-	ip, err := utils.GetCurrentIP(handler.Configuration)
-	if err != nil {
+	ip := handler.ipManager.GetCurrentIP()
+	if ip == "" {
 		if handler.Configuration.RunOnce {
-			return fmt.Errorf("%v: fail to get current IP", err)
+			return fmt.Errorf("fail to get current IP")
 		}
-		log.Error(err)
 		return nil
 	}
 
@@ -89,7 +99,7 @@ func (handler *Handler) UpdateIP(domains *[]settings.Domain) error {
 	}
 
 	for _, domain := range *domains {
-		err = handler.updateDNS(&domain, ip)
+		err := handler.updateDNS(&domain, ip)
 		if err != nil {
 			if handler.Configuration.RunOnce {
 				return fmt.Errorf("%v: fail to update DNS", err)
@@ -106,9 +116,10 @@ func (handler *Handler) UpdateIP(domains *[]settings.Domain) error {
 
 func (handler *Handler) updateDNS(domain *settings.Domain, ip string) error {
 	var updatedDomains []string
-	for _, subdomainName := range domain.SubDomains {
 
+	for _, subdomainName := range domain.SubDomains {
 		var hostname string
+
 		if subdomainName != utils.RootDomain {
 			hostname = subdomainName + "." + domain.DomainName
 		} else {
@@ -124,7 +135,7 @@ func (handler *Handler) updateDNS(domain *settings.Domain, ip string) error {
 			log.Warnf("Failed to resolve DNS for domain: %s, error: %s", hostname, err)
 		}
 
-		//check against the current known IP, if no change, skip update
+		// check against the current known IP, if no change, skip update
 		if ip == lastIP {
 			log.Infof("IP is the same as the resolved one, skip update, domain: %s, current IP: %s, resolved IP: %s", hostname, ip, lastIP)
 		} else {

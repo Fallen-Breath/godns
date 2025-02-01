@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
 	"net/http"
 	"time"
@@ -16,7 +17,7 @@ import (
 // GetHTTPClient creates the HTTP client and return it.
 func GetHTTPClient(conf *settings.Settings) *http.Client {
 	client := &http.Client{
-		Timeout: time.Second * defaultTimeout,
+		Timeout: time.Second * DefaultTimeout,
 	}
 
 	if conf.UseProxy && conf.Socks5Proxy != "" {
@@ -27,13 +28,20 @@ func GetHTTPClient(conf *settings.Settings) *http.Client {
 			return nil
 		}
 
-		dialContext := func(ctx context.Context, network, address string) (net.Conn, error) {
+		dialContext := func(_ context.Context, network, address string) (net.Conn, error) {
 			return dialer.Dial(network, address)
 		}
 
-		httpTransport := &http.Transport{}
+		httpTransport := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: conf.SkipSSLVerify},
+		}
 		client.Transport = httpTransport
 		httpTransport.DialContext = dialContext
+	} else {
+		httpTransport := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: conf.SkipSSLVerify},
+		}
+		client.Transport = httpTransport
 	}
 
 	return client

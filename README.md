@@ -7,7 +7,7 @@
  ╚═════╝  ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝
 ```
 
-[![Apache licensed][9]][10] [![Docker][3]][4] [![Go Report Card][11]][12] [![Cover.Run][15]][16] [![GoDoc][13]][14]
+[![Apache licensed][9]][10] [![Docker][3]][4] [![Go Report Card][11]][12] [![GoDoc][13]][14]
 
 [3]: https://img.shields.io/docker/image-size/timothyye/godns/latest
 [4]: https://hub.docker.com/r/timothyye/godns
@@ -17,12 +17,10 @@
 [12]: https://goreportcard.com/report/github.com/timothyye/godns
 [13]: https://godoc.org/github.com/TimothyYe/godns?status.svg
 [14]: https://godoc.org/github.com/TimothyYe/godns
-[15]: https://img.shields.io/badge/cover.run-88.2%25-green.svg
-[16]: https://cover.run/go/github.com/timothyye/godns
 
-[GoDNS](https://github.com/TimothyYe/godns) is a dynamic DNS (DDNS) client tool. It is a rewrite in [Go](https://golang.org) of my early [DynDNS](https://github.com/TimothyYe/DynDNS) open source project.
+[GoDNS](https://github.com/TimothyYe/godns) is a dynamic DNS (DDNS) client tool. It is a rewrite in [Go](https://golang.org) of my early [DynDNS](https://github.com/TimothyYe/DynDNS) open-source project.
 
----
+<img src="https://github.com/TimothyYe/godns/blob/master/assets/snapshots/web-panel.jpg?raw=true" />
 
 - [Supported DNS Providers](#supported-dns-providers)
 - [Supported Platforms](#supported-platforms)
@@ -32,10 +30,12 @@
 - [Configuration](#configuration)
   - [Overview](#overview)
   - [Configuration file format](#configuration-file-format)
+  - [Dynamic loading of configuration](#dynamic-loading-of-configuration)
   - [Configuration properties](#configuration-properties)
   - [Update root domain](#update-root-domain)
   - [Configuration examples](#configuration-examples)
     - [Cloudflare](#cloudflare)
+    - [DigitalOcean](#digitalocean)
     - [DNSPod](#dnspod)
     - [Dreamhost](#dreamhost)
     - [Dynv6](#dynv6)
@@ -48,7 +48,11 @@
     - [Linode](#linode)
     - [Strato](#strato)
     - [LoopiaSE](#loopiase)
+    - [Infomaniak](#infomaniak)
+    - [Hetzner](#hetzner)
     - [OVH](#ovh)
+    - [Dynu](#dynu)
+    - [IONOS](#ionos)
   - [Notifications](#notifications)
     - [Email](#email)
     - [Telegram](#telegram)
@@ -56,21 +60,29 @@
     - [Discord](#discord)
     - [Pushover](#pushover)
   - [Webhook](#webhook)
-    - [HTTP GET Request](#webhook-with-http-get-reqeust)
-    - [HTTP POST Request](#webhook-with-http-post-request)
+    - [Webhook with HTTP GET request](#webhook-with-http-get-request)
+    - [Webhook with HTTP POST request](#webhook-with-http-post-request)
   - [Miscellaneous topics](#miscellaneous-topics)
     - [IPv6 support](#ipv6-support)
     - [Network interface IP address](#network-interface-ip-address)
     - [SOCKS5 proxy support](#socks5-proxy-support)
     - [Display debug info](#display-debug-info)
+    - [Obtain IP from RouterOS](#obtain-ip-from-router-os)
+    - [Multiple API URLs](#multiple-api-urls)
     - [Recommended APIs](#recommended-apis)
+- [Web Panel](#web-panel)
 - [Running GoDNS](#running-godns)
   - [Manually](#manually)
   - [As a manual daemon](#as-a-manual-daemon)
   - [As a managed daemon (with upstart)](#as-a-managed-daemon-with-upstart)
   - [As a managed daemon (with systemd)](#as-a-managed-daemon-with-systemd)
+  - [As a managed daemon (with procd)](#as-a-managed-daemon-with-procd)
   - [As a Docker container](#as-a-docker-container)
   - [As a Windows service](#as-a-windows-service)
+- [Contributing](#contributing)
+  - [Setup the frontend development environment](#setup-the-frontend-development-environment)
+  - [Build the frontend](#build-the-frontend)
+  - [Run the frontend](#run-the-frontend)
 - [Special Thanks](#special-thanks)
 
 ---
@@ -80,6 +92,7 @@
 | Provider                              |    IPv4 support    |    IPv6 support    |    Root Domain     |     Subdomains     |
 | ------------------------------------- | :----------------: | :----------------: | :----------------: | :----------------: |
 | [Cloudflare][cloudflare]              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| [DigitalOcean][digitalocean]          | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | [Google Domains][google.domains]      | :white_check_mark: | :white_check_mark: |        :x:         | :white_check_mark: |
 | [DNSPod][dnspod]                      | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | [Dynv6][dynv6]                        | :white_check_mark: | :white_check_mark: |        :x:         | :white_check_mark: |
@@ -92,10 +105,14 @@
 | [Linode][linode]                      | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | [Strato][strato]                      | :white_check_mark: | :white_check_mark: |        :x:         | :white_check_mark: |
 | [LoopiaSE][loopiase]                  | :white_check_mark: | :white_check_mark: |        :x:         | :white_check_mark: |
+| [Infomaniak][infomaniak]              | :white_check_mark: | :white_check_mark: |        :x:         | :white_check_mark: |
 | [Hetzner][hetzner]                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | [OVH][ovh]                            | :white_check_mark: | :white_check_mark: |        :x:         | :white_check_mark: |
+| [Dynu][dynu]                          | :white_check_mark: | :white_check_mark: |        :x:         | :white_check_mark: |
+| [IONOS][ionos]                          | :white_check_mark: | :white_check_mark: |        :x:         | :white_check_mark: |
 
 [cloudflare]: https://cloudflare.com
+[digitalocean]: https://digitalocean.com
 [google.domains]: https://domains.google
 [dnspod]: https://www.dnspod.cn
 [dynv6]: https://dynv6.com
@@ -108,8 +125,11 @@
 [linode]: https://www.linode.com
 [strato]: https://strato.de
 [loopiase]: https://www.loopia.se/
+[infomaniak]: https://www.infomaniak.com/
 [hetzner]: https://hetzner.com/
 [ovh]: https://www.ovh.com
+[dynu]: https://www.dynu.com/
+[ionos]: https://www.ionos.com/
 
 Tip: You can follow this [issue](https://github.com/TimothyYe/godns/issues/76) to view the current status of DDNS for root domains.
 
@@ -180,19 +200,24 @@ GoDNS supports 2 different configuration file formats:
 
 By default, GoDNS uses `JSON` config file. However, you can specify to use the `YAML` format via: `./godns -c /path/to/config.yaml`
 
+### Dynamic loading of configuration
+
+GoDNS supports dynamic loading of configuration. If you modify the configuration file, GoDNS will automatically reload the configuration and apply the changes.
+
 ### Configuration properties
 
 - `provider` — One of the [supported provider to use](#supported-dns-providers): `Cloudflare`, `Google`, `DNSPod`, `AliDNS`, `HE`, `DuckDNS` or `Dreamhost`.
 - `email` — Email or account name of the DNS provider.
 - `password` — Password of the DNS provider.
 - `login_token` — API token of the DNS provider.
-- `domains` — Domains list, with your sub domains.
+- `domains` — Domains list, with your subdomains.
 - `ip_urls` — A URL array for fetching one's public IPv4 address.
 - `ipv6_urls` — A URL array for fetching one's public IPv6 address.
 - `ip_type` — Switch deciding if IPv4 or IPv6 should be used (when [supported](#supported-dns-providers)). Available values: `IPv4` or `IPv6`.
 - `interval` — How often (in seconds) the public IP should be updated.
 - `socks5_proxy` — Socks5 proxy server.
 - `resolver` — Address of a public DNS server to use. For instance to use [Google's public DNS](https://developers.google.com/speed/public-dns/docs/using), you can set `8.8.8.8` when using GoDNS in IPv4 mode or `2001:4860:4860::8888` in IPv6 mode.
+- `skip_ssl_verify` - Skip verification of SSL certificates for https requests.
 
 ### Update root domain
 
@@ -209,9 +234,9 @@ By simply putting `@` into `sub_domains`, for example:
 
 #### Cloudflare
 
-For Cloudflare, you need to provide the email & Global API Key as password (or to use the API token) and config all the domains & subdomains.
+For Cloudflare, you need to provide the email & Global API Key as a password (or to use the API token) and configure all the domains & subdomains.
 
-By setting the option `proxied = true`, the record is receiving the performance and security benefits of Cloudflare. This option is only available for Cloudflare.
+By setting the option `proxied = true`, the record receives the performance and security benefits of Cloudflare. This option is only available for Cloudflare.
 
 <details>
 <summary>Using email & Global API Key</summary>
@@ -296,6 +321,33 @@ For DNSPod, you need to provide your API Token(you can create it [here](https://
   "interval": 300,
   "socks5_proxy": ""
 }
+```
+
+</details>
+
+#### DigitalOcean
+
+For DigitalOcean, you need to provide an API Token with the `domain` scopes (you can create it [here](https://cloud.digitalocean.com/account/api/tokens/new)), and config all the domains & subdomains.
+
+<details>
+<summary>Example</summary>
+
+```json
+{
+  "provider": "DigitalOcean",
+  "login_token": "dop_v1_00112233445566778899aabbccddeeff",
+  "domains": [
+    {
+      "domain_name": "example.com",
+      "sub_domains": ["@", "www"]
+    }
+  ],
+  "resolver": "8.8.8.8",
+  "ip_urls": ["https://api.ip.sb/ip"],
+  "ip_type": "IPv4",
+  "interval": 300
+}
+
 ```
 
 </details>
@@ -481,7 +533,7 @@ For DuckDNS, the only thing needed is to provide the `token`, config 1 default d
 
 #### HE.net
 
-For HE, email is not needed, just fill the DDNS key as password, and config all the domains & subdomains.
+For HE, email is not needed, just fill in the DDNS key as a password, and configure all the domains & subdomains.
 
 <details>
 <summary>Example</summary>
@@ -518,7 +570,7 @@ Add a new "A record" and make sure that "Enable entry for dynamic dns" is checke
 
 <img src="assets/snapshots/he1.png" width="640" />
 
-Fill in your own DDNS key or generate a random DDNS key for this new created "A record":
+Fill in your own DDNS key or generate a random DDNS key for this newly created "A record":
 
 <img src="assets/snapshots/he2.png" width="640" />
 
@@ -534,7 +586,7 @@ For Scaleway, you need to provide an API Secret Key as the `login_token` ([How t
 
 <details>
 <summary>Example</summary>
- 
+
 ```json
 {
   "provider": "Scaleway",
@@ -553,19 +605,20 @@ For Scaleway, you need to provide an API Secret Key as the `login_token` ([How t
   "interval": 300
 }
 ```
+
 </details>
 
 #### Linode
 
 To authenticate with the Linode API you will need to provide a Personal Access Token with "Read/Write" access on the "Domain" scope. Linode has [a help page about creating access tokens](https://www.linode.com/docs/guides/getting-started-with-the-linode-api/). Pass this token into the `login_token` field of the config file.
 
-The `domain_name` field of the config file must be the name of an existing Domain managed by Linode. Linode has [a help page about adding domains](https://www.linode.com/docs/guides/dns-manager/). The GoDNS Linode handler will not create domains automatically, but will create subdomains automatically.
+The `domain_name` field of the config file must be the name of an existing Domain managed by Linode. Linode has [a help page about adding domains](https://www.linode.com/docs/guides/dns-manager/). The GoDNS Linode handler will not create domains automatically but will create subdomains automatically.
 
 The GoDNS Linode handler currently uses a fixed TTL of 30 seconds for Linode DNS records.
 
 <details>
 <summary>Example</summary>
- 
+
 ```json
 {
   "provider": "Linode",
@@ -584,11 +637,12 @@ The GoDNS Linode handler currently uses a fixed TTL of 30 seconds for Linode DNS
   "interval": 300
 }
 ```
+
 </details>
 
 #### Strato
 
-For Strato, you need to provide email & password, and config all the domains & subdomains.  
+For Strato, you need to provide email & password and configure all the domains & subdomains.
 More Info: [German](https://www.strato.de/faq/hosting/so-einfach-richten-sie-dyndns-fuer-ihre-domains-ein/) [English](https://www.strato-hosting.co.uk/faq/hosting/this-is-how-easy-it-is-to-set-up-dyndns-for-your-domains/)
 
 <details>
@@ -620,7 +674,7 @@ More Info: [German](https://www.strato.de/faq/hosting/so-einfach-richten-sie-dyn
 
 #### LoopiaSE
 
-For LoopiaSE, you need to provide username & password, and config all the domains & subdomains.
+For LoopiaSE, you need to provide a username & password and configure all the domains & subdomains.
 More info: [Swedish](https://support.loopia.se/wiki/om-dyndns-stodet/)
 
 <details>
@@ -651,12 +705,45 @@ More info: [Swedish](https://support.loopia.se/wiki/om-dyndns-stodet/)
 
 </details>
 
+#### Infomaniak
+
+For Infomaniak, you need to provide a username & password and configure all the domains & subdomains.
+More info: [English](https://faq.infomaniak.com/2376)
+
+<details>
+<summary>Example</summary>
+
+```json
+{
+  "provider": "Infomaniak",
+  "email": "Your_Username",
+  "password": "Your_Password",
+  "domains": [
+    {
+      "domain_name": "example.com",
+      "sub_domains": ["www", "test"]
+    },
+    {
+      "domain_name": "example2.com",
+      "sub_domains": ["www", "test"]
+    }
+  ],
+  "resolver": "8.8.8.8",
+  "ip_urls": ["https://api.ip.sb/ip"],
+  "ip_type": "IPv4",
+  "interval": 300,
+  "socks5_proxy": ""
+}
+```
+
+</details>
+
 #### Hetzner
 
-For Hetzner, you have to create an access token. This can be done in the DNS-Console.  
-(Person Icon in the top left corner --> API Tokens)  
-Notice: If a domain has multiple Records **only the first** Record will be updated.  
-Make shure there is just one record.
+For Hetzner, you have to create an access token. This can be done in the DNS-Console.
+(Person Icon in the top left corner --> API Tokens)
+Notice: If a domain has multiple Records **only the first** Record will be updated.
+Make sure there is just one record.
 
 <details>
 <summary>Example</summary>
@@ -685,9 +772,9 @@ Make shure there is just one record.
 
 #### OVH
 
-For OVH, you need to provide a Comsumerkey, an Appsecret, an Appkey and configure all the domains & subdomains.
-The neeeded values can be obtaines by visting [this site](https://www.ovh.com/auth/api/createToken)  
-Rights should be '\*' on GET, POST and PUT  
+For OVH, you need to provide a Consumerkey, an Appsecret, and an Appkey and configure all the domains & subdomains.
+The needed values can be obtained by visiting [this site](https://www.ovh.com/auth/api/createToken)
+Rights should be '\*' on GET, POST and PUT
 More info: [help.ovhcloud.com](https://help.ovhcloud.com/csm/en-gb-api-getting-started-ovhcloud-api?id=kb_article_view&sysparm_article=KB0042784)
 
 <details>
@@ -696,7 +783,7 @@ More info: [help.ovhcloud.com](https://help.ovhcloud.com/csm/en-gb-api-getting-s
 ```json
 {
   "provider": "OVH",
-  "comsumer_key": "e389ac80cc8da9c7451bc7b8f171bf4f",
+  "consumer_key": "e389ac80cc8da9c7451bc7b8f171bf4f",
   "app_secret": "d1ffee354d3643d70deaab48a09131fd",
   "app_key": "cd338839d6472064",
   "domains": [
@@ -715,6 +802,63 @@ More info: [help.ovhcloud.com](https://help.ovhcloud.com/csm/en-gb-api-getting-s
   "interval": 300,
   "socks5_proxy": ""
 }
+```
+
+</details>
+
+#### Dynu
+
+For Dynu, you need to configure the `password`, config 1 default domain & subdomain.
+
+<details>
+<summary>Example</summary>
+
+```json
+{
+  "provider": "Dynu",
+  "password": "Your_Password",
+  "domains": [
+    {
+      "domain_name": "your_domain.com",
+      "sub_domains": [
+        "your_subdomain"
+      ]
+    }
+  ],
+  "resolver": "8.8.8.8",
+  "ip_urls": ["https://api.ip.sb/ip"],
+  "ip_type": "IPv4",
+  "interval": 300,
+  "socks5_proxy": ""
+}
+```
+
+</details>
+
+#### IONOS
+
+This is for IONOS Hosting Services, **not** IONOS Cloud.
+You'll need to [sign up for API Access to Hosting Services](https://my.ionos.com/shop/product/ionos-api), then create an [API Key](https://developer.hosting.ionos.com/keys).
+You can find a full guide in the [IONOS API Documentation](https://developer.hosting.ionos.com/docs/getstarted).
+**Note**: The API-Key used by GoDNS must follow the form `publicprefix.secret` as described in the aforementioned documentation.
+
+<details>
+<summary>Example</summary>
+
+```yaml
+provider: IONOS
+login_token: publicprefix.secret
+domains:
+  - domain_name: example.com
+    sub_domains:
+      - somesubdomain
+      - anothersubdomain
+resolver: 1.1.1.1
+ip_urls:
+  - https://api.ipify.org
+ip_type: IPv4
+interval: 300
+socks5_proxy: ""
 ```
 
 </details>
@@ -741,7 +885,7 @@ Emails are sent over [SMTP](https://en.wikipedia.org/wiki/Simple_Mail_Transfer_P
   }
 ```
 
-Each time the IP changes, you will receive an email like that:
+Each time the IP changes, you will receive an email like this:
 
 <img src="https://github.com/TimothyYe/godns/blob/master/assets/snapshots/mail.png?raw=true" />
 
@@ -761,7 +905,7 @@ To receive a [Telegram](https://telegram.org/) message each time the IP changes,
   }
 ```
 
-The `message_template` property supports [markdown](https://www.markdownguide.org). New lines needs to be escaped with `%0A`.
+The `message_template` property supports [markdown](https://www.markdownguide.org). New lines need to be escaped with `%0A`.
 
 #### Slack
 
@@ -821,13 +965,13 @@ can be found on the Pushover [API description](https://pushover.net/api#priority
 
 ### Webhook
 
-Webhook is another feature that GoDNS provides to deliver notifications to the other applications while the IP is changed. GoDNS delivers a notification to the target URL via an HTTP `GET` or `POST` request.
+Webhook is another feature that GoDNS provides to deliver notifications to other applications while the IP is changed. GoDNS delivers a notification to the target URL via an HTTP `GET` or `POST` request.
 
 The configuration section `webhook` is used for customizing the webhook request. In general, there are 2 fields used for the webhook request:
 
-> - `url`: The target URL for sending webhook request.
+> - `url`: The target URL for sending webhook requests.
 > - `headers`: The extra headers for sending webhook request. It's optional.
-> - `request_body`: The content for sending `POST` request, if this field is empty, a HTTP GET request will be sent instead of the HTTP POST request.
+> - `request_body`: The content for sending a `POST` request, if this field is empty, an HTTP GET request will be sent instead of the HTTP POST request.
 
 Available variables:
 
@@ -835,7 +979,7 @@ Available variables:
 > - `IP`: The new IP address.
 > - `IPType`: The type of the IP: `IPV4` or `IPV6`.
 
-#### Webhook with HTTP GET reqeust
+#### Webhook with HTTP GET request
 
 ```json
 "webhook": {
@@ -867,7 +1011,7 @@ http://localhost:5000/api/v1/send?domain=ddns.example.com&ip=192.168.1.1&ip_type
 }
 ```
 
-For this example, a webhook with bearer authentication will be triggered when the IP changes, the target URL `http://localhost:5000/api/v1/send` will receive an `HTTP POST` request with request body:
+For this example, a webhook with bearer authentication will be triggered when the IP changes, and the target URL `http://localhost:5000/api/v1/send` will receive an `HTTP POST` request with the request body:
 
 ```json
 { "domain": "ddns.example.com", "ip": "192.168.1.1", "ip_type": "IPV4" }
@@ -915,7 +1059,7 @@ To enable the `IPv6` support of GoDNS, there are two solutions to choose from:
 
 #### Network interface IP address
 
-For some reasons if you want to get the IP address associated to a network interface (instead of performing an online lookup), you can specify it in the configuration file this way:
+For some reasons, if you want to get the IP address associated with a network interface (instead of performing an online lookup), you can specify it in the configuration file this way:
 
 ```json
   "ip_urls": [""],
@@ -935,6 +1079,20 @@ You can make all remote calls go through a [SOCKS5 proxy](https://en.wikipedia.o
 "use_proxy": true
 ```
 
+#### Obtain IP from Router OS
+
+If you want to get the public IP from a Mikrotik RouterOS device, you can use the following configuration:
+
+```json
+"mikrotik": {
+  "enabled": false,
+  "server": "http://192.168.88.1",
+  "username": "admin",
+  "password": "password",
+  "interface": "pppoe-out"
+}
+```
+
 #### Display debug info
 
 To display debug info, set `debug_info` as `true` to enable this feature. By default, the debug info is disabled.
@@ -943,14 +1101,41 @@ To display debug info, set `debug_info` as `true` to enable this feature. By def
   "debug_info": true,
 ```
 
+#### Multiple API URLs
+
+GoDNS supports fetching the public IP from multiple URLs via a simple round-robin algorithm. If the first URL fails, it will try the next one until it succeeds. Here is an example of the configuration:
+
+```json
+  "ip_urls": [
+  "https://api.ipify.org",
+  "https://myip.biturl.top",
+  "https://api-ipv4.ip.sb/ip"
+  ],
+```
+
 #### Recommended APIs
 
-- https://api.ipify.org
-- https://myip.biturl.top
-- https://ip4.seeip.org
-- https://ipecho.net/plain
-- https://api-ipv4.ip.sb/ip
+- <https://api.ipify.org>
+- <https://myip.biturl.top>
+- <https://ipecho.net/plain>
+- <https://api-ipv4.ip.sb/ip>
 
+## Web Panel
+
+<img src="https://github.com/TimothyYe/godns/blob/master/assets/snapshots/web-panel.jpg?raw=true" />
+
+Starting from version 3.1.0, GoDNS provides a web panel to manage the configuration and monitor the status of the domains. The web UI is disabled by default. To enable it, just enable the `web_panel` in the configuration file.
+
+```json
+"web_panel": {
+  "enabled": true,
+  "addr": "0.0.0.0:9000",
+  "username": "admin",
+  "password": "123456"
+}
+```
+
+After enabling the web panel, you can visit `http://localhost:9000` to manage the configuration and monitor the status of the domains.
 ## Running GoDNS
 
 There are a few ways to run GoDNS.
@@ -959,7 +1144,7 @@ There are a few ways to run GoDNS.
 
 Note: make sure to set the `run_once` parameter in your config file so the program will quit after the first run (the default is `false`).
 
-Can be added to `cron` or attached to other events on your system.
+It can be added to `cron` or attached to other events on your system.
 
 ```json
 {
@@ -985,7 +1170,7 @@ Note: when the program stops, it will not be restarted.
 ### As a managed daemon (with upstart)
 
 1. Install `upstart` first (if not available already)
-2. Copy `./upstart/godns.conf` to `/etc/init` (and tweak it to your needs)
+2. Copy `./config/upstart/godns.conf` to `/etc/init` (and tweak it to your needs)
 3. Start the service:
 
    ```bash
@@ -995,7 +1180,7 @@ Note: when the program stops, it will not be restarted.
 ### As a managed daemon (with systemd)
 
 1. Install `systemd` first (it not available already)
-2. Copy `./systemd/godns.service` to `/lib/systemd/system` (and tweak it to your needs)
+2. Copy `./config/systemd/godns.service` to `/lib/systemd/system` (and tweak it to your needs)
 3. Start the service:
 
    ```bash
@@ -1003,20 +1188,33 @@ Note: when the program stops, it will not be restarted.
    sudo systemctl start godns
    ```
 
+### As a managed daemon (with procd)
+
+`procd` is the init system on OpenWRT. If you want to use godns as a service with OpenWRT and procd:
+1. Copy `./config/procd/godns` to `/etc/init.d` (and tweak it to your needs)
+2. Start the service (with root privilege):
+
+   ```bash
+   service godns enable
+   service godns start
+   ```
+
 ### As a Docker container
 
 Available docker registries:
 
-- https://hub.docker.com/r/timothyye/godns
-- https://github.com/TimothyYe/godns/pkgs/container/godns
+- <https://hub.docker.com/r/timothyye/godns>
+- <https://github.com/TimothyYe/godns/pkgs/container/godns>
 
-Visit https://hub.docker.com/r/timothyye/godns to fetch the latest docker image.  
-With `/path/to/config.json` your local configuration file, run:
+Visit <https://hub.docker.com/r/timothyye/godns> to fetch the latest docker image. The `-p 9000:9000` option exposes the web panel.
+
+With `/path/to/config.json` as your local configuration file, run:
 
 ```bash
 docker run \
 -d --name godns --restart=always \
 -v /path/to/config.json:/config.json \
+-p 9000:9000 \
 timothyye/godns:latest
 ```
 
@@ -1028,6 +1226,7 @@ docker run \
 -e CONFIG=/config.yaml \
 --restart=always \
 -v /path/to/config.yaml:/config.yaml \
+-p 9000:9000 \
 timothyye/godns:latest
 ```
 
@@ -1049,6 +1248,41 @@ Note: you can uninstall the service by running:
 
 ```
 nssm remove YOURSERVICENAME
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Setup the frontend development environment
+
+Requirements:
+* Node.js `18.19.0` or higher
+* Go `1.17` or higher
+
+The frontend project is built with [Next.js](https://nextjs.org/) and [daisyUI](https://daisyui.com/). To start the development environment, run:
+
+```bash
+cd web
+npm ci
+npm run dev
+```
+### Build the frontend
+
+To build the frontend, run:
+
+```bash
+cd web
+npm run build
+```
+
+### Run the frontend
+
+To run the frontend, run:
+
+```bash
+cd web
+npm run start
 ```
 
 ## Special Thanks

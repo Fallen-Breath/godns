@@ -16,10 +16,14 @@ import (
 
 func CreateHTTPClient(conf *settings.Settings) (*http.Client, error) {
 	transport := &http.Transport{}
-	transport, err := applyProxy(conf.Socks5Proxy, transport)
-	if err != nil {
-		log.Infof("Error connecting to proxy: '%s'", err)
-		log.Info("Continuing without proxy")
+	var err error
+
+	if conf.UseProxy && conf.Socks5Proxy != "" {
+		transport, err = applyProxy(conf.Socks5Proxy, transport)
+		if err != nil {
+			log.Errorf("Error connecting to proxy: '%s'", err)
+			log.Info("Continuing without proxy")
+		}
 	}
 
 	if conf.LoginToken == "" {
@@ -45,7 +49,7 @@ func applyProxy(proxyAddress string, transport *http.Transport) (*http.Transport
 	}
 	log.Infof("Connected to proxy : %s", proxyAddress)
 
-	dialContext := func(ctx context.Context, network, address string) (net.Conn, error) {
+	dialContext := func(_ context.Context, network, address string) (net.Conn, error) {
 		return dialer.Dial(network, address)
 	}
 
