@@ -270,7 +270,7 @@ func (provider *DNSProvider) createRecord(zoneID, domain, subDomain, ip string) 
 	}
 
 	if !r.Success {
-		log.Infof("Response failed: %+v", string(body))
+		log.Infof("createRecord Response failed: status %+v header %+v, body %+v", resp.Status, resp.Header, string(body))
 		return fmt.Errorf("failed to create record: %+v", string(body))
 	}
 
@@ -305,7 +305,12 @@ func (provider *DNSProvider) updateRecord(record DNSRecord, newIP string) string
 	}
 	if !r.Success {
 		body, _ := io.ReadAll(resp.Body)
-		log.Infof("Response failed: %+v", string(body))
+		log.Infof("updateRecord Response failed: %+v", resp.Status)
+		log.Infof("req.URL: %+v", req.URL)
+		log.Infof("req.Header: %+v", req.Header)
+		log.Infof("req.json: %+v", string(j))
+		log.Infof("rsp.header: %+v", resp.Header)
+		log.Infof("rsp.body: %+v", string(body))
 	} else {
 		log.Infof("Record updated: %+v - %+v", record.Name, record.IP)
 		lastIP = record.IP
