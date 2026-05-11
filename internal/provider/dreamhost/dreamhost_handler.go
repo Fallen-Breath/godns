@@ -37,7 +37,7 @@ func (provider *DNSProvider) UpdateIP(domainName, subdomainName, ip string) erro
 		return err
 	}
 
-	return provider.updateIP(hostname, ip, lastIP)
+	return provider.updateIP(hostname, ip, lastIP[0])
 }
 
 // updateIP update subdomain with current IP.

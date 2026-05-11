@@ -9,7 +9,7 @@ import (
 )
 
 // ResolveDNS will query DNS for a given hostname.
-func ResolveDNS(hostname, resolver, ipType string) (string, error) {
+func ResolveDNS(hostname, resolver, ipType string) ([]string, error) {
 	var dnsType uint16
 	if ipType == "" || strings.ToUpper(ipType) == IPV4 {
 		dnsType = dns.TypeA
@@ -21,10 +21,10 @@ func ResolveDNS(hostname, resolver, ipType string) (string, error) {
 	if resolver == "" {
 		dnsAddress, err := net.LookupHost(hostname)
 		if err != nil {
-			return "<nil>", err
+			return nil, err
 		}
 
-		return dnsAddress[0], nil
+		return dnsAddress, nil
 	}
 	res := dnsResolver.New([]string{resolver})
 	// In case of i/o timeout
@@ -32,8 +32,12 @@ func ResolveDNS(hostname, resolver, ipType string) (string, error) {
 
 	ip, err := res.LookupHost(hostname, dnsType)
 	if err != nil {
-		return "<nil>", err
+		return nil, err
 	}
 
-	return ip[0].String(), nil
+	ipStrs := make([]string, len(ip))
+	for i, ipAddr := range ip {
+		ipStrs[i] = ipAddr.String()
+	}
+	return ipStrs, nil
 }

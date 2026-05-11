@@ -136,7 +136,7 @@ func (handler *Handler) updateDNS(domain *settings.Domain, ip string) error {
 		}
 
 		// check against the current known IP, if no change, skip update
-		if ip == lastIP {
+		if len(lastIP) == 1 && ip == lastIP[0] {
 			log.Infof("IP is the same as the resolved one, skip update, domain: %s, current IP: %s, resolved IP: %s", hostname, ip, lastIP)
 		} else {
 			log.Infof("IP is different from the resolved one, do update, domain: %s, current IP: %s, resolved IP: %s", hostname, ip, lastIP)
@@ -149,7 +149,7 @@ func (handler *Handler) updateDNS(domain *settings.Domain, ip string) error {
 
 			// execute webhook when it is enabled
 			if handler.Configuration.Webhook.Enabled {
-				if err := lib.GetWebhook(handler.Configuration).Execute(hostname, ip, lastIP); err != nil {
+				if err := lib.GetWebhook(handler.Configuration).Execute(hostname, ip, strings.Join(lastIP, ",")); err != nil {
 					return err
 				}
 			}
