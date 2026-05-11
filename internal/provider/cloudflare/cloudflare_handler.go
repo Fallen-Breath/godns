@@ -15,7 +15,8 @@ import (
 
 const (
 	// URL is the endpoint for the Cloudflare API.
-	URL = "https://api.cloudflare.com/client/v4"
+	URL        = "https://api.cloudflare.com/client/v4"
+	DefaultTTL = 60
 )
 
 // DNSProvider struct definition.
@@ -253,7 +254,7 @@ func (provider *DNSProvider) createRecord(zoneID, domain, subDomain, ip string) 
 	newRecord := DNSRecord{
 		Type: recordType,
 		IP:   ip,
-		TTL:  1,
+		TTL:  DefaultTTL,
 	}
 
 	if provider.configuration.Proxied {
